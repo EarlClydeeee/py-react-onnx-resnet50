@@ -9,8 +9,8 @@ import {
   UploadIcon,
 } from "./icons";
 
-const MODEL_PATH = "/models/resnet50.onnx";
-const LABELS_PATH = "/data/imagenet_labels.json";
+const MODEL_PATH = "/models/resnet50_skin.onnx";
+const LABELS_PATH = "/data/skin_labels.json";
 
 const FEATURES = [
   {
@@ -21,15 +21,15 @@ const FEATURES = [
   },
   {
     icon: BoltIcon,
-    title: "ImageNet pretrained",
+    title: "HAM10000 fine-tuned",
     description:
-      "1,000-class classification using weights exported from torchvision with standard preprocessing.",
+      "7-class skin disease classification trained on 10,000+ dermoscopy images using transfer learning.",
   },
   {
     icon: SparklesIcon,
     title: "Live predictions",
     description:
-      "Upload any photo and see top-5 labels with confidence scores in real time.",
+      "Upload a skin lesion photo and see the predicted condition with confidence score in real time.",
   },
 ];
 
@@ -133,7 +133,7 @@ export default function ImageClassifier() {
         const modelResponse = await fetch(MODEL_PATH, { method: "HEAD" });
         if (!modelResponse.ok) {
           throw new Error(
-            "ONNX model not found. Run python export_onnx.py to generate public/models/resnet50.onnx."
+            "ONNX model not found. Export from Colab and place resnet50_skin.onnx in public/models/."
           );
         }
 
@@ -241,9 +241,9 @@ export default function ImageClassifier() {
             </div>
             <div>
               <p className="font-display text-lg font-bold leading-tight text-text">
-                ResNet50 ONNX
+                Skin Disease Classifier
               </p>
-              <p className="text-sm text-slate-600">Browser image classifier</p>
+              <p className="text-sm text-slate-600">ResNet50 · HAM10000 · 7 classes</p>
             </div>
           </div>
           <StatusBadge status={modelStatus} />
@@ -253,12 +253,12 @@ export default function ImageClassifier() {
       <main className="mx-auto max-w-6xl px-4 pb-16 pt-8">
         <section className="mb-10 text-center">
           <h1 className="font-display text-4xl font-bold tracking-tight text-text sm:text-5xl">
-            Classify images with{" "}
+            Skin Disease Classification with{" "}
             <span className="text-primary">ResNet50</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
-            Upload a photo and run ImageNet classification directly in your
-            browser using an ONNX model exported from PyTorch.
+            Upload a dermoscopy image and classify it into one of 7 skin
+            conditions — running entirely in your browser via ONNX Runtime.
           </p>
         </section>
 
@@ -454,25 +454,27 @@ export default function ImageClassifier() {
 
         <section className="mt-10 rounded-2xl border border-primary/10 bg-primary/5 p-6">
           <h2 className="font-display text-lg font-semibold text-text">
-            Try the sample image
+            Skin disease classes
           </h2>
           <p className="mt-2 text-sm text-slate-600">
-            Use the bundled cat photo to verify your setup matches PyTorch
-            inference.
+            This model classifies dermoscopy images into 7 categories from the HAM10000 dataset.
           </p>
-          <button
-            type="button"
-            onClick={() => {
-              clearPreview();
-              setPreviewUrl("/sample-cat.jpg");
-              setPredictions([]);
-              setInferenceError("");
-              setInferenceMs(null);
-            }}
-            className="mt-4 cursor-pointer rounded-full border border-primary/20 bg-white px-4 py-2 text-sm font-medium text-primary transition-colors duration-200 hover:bg-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            Load sample cat image
-          </button>
+          <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-slate-700 sm:grid-cols-4">
+            {[
+              "Actinic Keratosis",
+              "Basal Cell Carcinoma",
+              "Benign Keratosis",
+              "Dermatofibroma",
+              "Melanoma",
+              "Melanocytic Nevi",
+              "Vascular Lesions",
+            ].map((cls) => (
+              <li key={cls} className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-primary/60 shrink-0" />
+                {cls}
+              </li>
+            ))}
+          </ul>
         </section>
       </main>
     </div>

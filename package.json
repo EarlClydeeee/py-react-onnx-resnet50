@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "export:skin": "python export_skin_onnx.py"
   },
   "dependencies": {
     "next": "16.2.9",
