@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "ResNet50 ONNX — Browser Image Classifier",
+  title: "Brain Tumor Classifier — ResNet50 ONNX",
   description:
-    "Classify images in the browser with ResNet50 exported to ONNX and ONNX Runtime Web.",
+    "Classify brain MRI scans into 4 tumor categories using ResNet50 and ONNX Runtime Web — runs entirely in your browser.",
 };
 
 export default function RootLayout({ children }) {

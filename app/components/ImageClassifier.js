@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getTopPredictions,
   preprocessImage,
-  validateSkinPhoto,
+  validateBrainMRI,
 } from "@/lib/preprocess";
 import {
   BoltIcon,
@@ -13,8 +13,8 @@ import {
   UploadIcon,
 } from "./icons";
 
-const MODEL_PATH = "/models/resnet50_skin.onnx";
-const LABELS_PATH = "/data/skin_labels.json";
+const MODEL_PATH = "/models/resnet50_brain.onnx";
+const LABELS_PATH = "/data/brain_labels.json";
 const MIN_DISEASE_CONFIDENCE = 0.45;
 const MIN_CONFIDENCE_MARGIN = 0.12;
 
@@ -27,15 +27,15 @@ const FEATURES = [
   },
   {
     icon: BoltIcon,
-    title: "HAM10000 fine-tuned",
+    title: "Brain Tumor MRI Dataset",
     description:
-      "7-class skin disease classification trained on 10,000+ dermoscopy images using transfer learning.",
+      "4-class tumor classification trained on 7,000+ MRI scans using ResNet50 transfer learning.",
   },
   {
     icon: SparklesIcon,
     title: "Live predictions",
     description:
-      "Upload a skin lesion photo and see the predicted condition with confidence score in real time.",
+      "Upload a brain MRI scan and see the predicted tumor type with confidence score in real time.",
   },
 ];
 
@@ -114,9 +114,9 @@ function ValidationCard({ result }) {
   };
 
   const titles = {
-    valid: "Skin photo check passed",
-    warning: "Skin photo check needs review",
-    invalid: "Photo is not suitable",
+    valid: "MRI image check passed",
+    warning: "MRI image check needs review",
+    invalid: "Image is not suitable",
   };
 
   return (
@@ -171,7 +171,7 @@ export default function ImageClassifier() {
         const modelResponse = await fetch(MODEL_PATH, { method: "HEAD" });
         if (!modelResponse.ok) {
           throw new Error(
-            "ONNX model not found. Export from Colab and place resnet50_skin.onnx in public/models/."
+            "ONNX model not found. Export from Colab and place resnet50_brain.onnx in public/models/."
           );
         }
 
@@ -251,10 +251,10 @@ export default function ImageClassifier() {
     setInferenceMs(null);
 
     try {
-      const skinCheck = validateSkinPhoto(imageEl);
-      setValidationResult(skinCheck);
-      if (skinCheck.status === "invalid") {
-        setInferenceError(skinCheck.reason);
+      const mriCheck = validateBrainMRI(imageEl);
+      setValidationResult(mriCheck);
+      if (mriCheck.status === "invalid") {
+        setInferenceError(mriCheck.reason);
         return;
       }
 
@@ -273,10 +273,10 @@ export default function ImageClassifier() {
       if (
         (top5[0]?.probability ?? 0) < MIN_DISEASE_CONFIDENCE ||
         confidenceMargin < MIN_CONFIDENCE_MARGIN ||
-        skinCheck.status === "warning"
+        mriCheck.status === "warning"
       ) {
         setReliabilityWarning(
-          "This image may not contain a clear skin disease pattern. Treat the prediction as low-confidence and upload a clearer lesion close-up if available."
+          "This image may not contain a clear brain MRI pattern. Treat the prediction as low-confidence and upload a clearer MRI scan if available."
         );
       }
 
@@ -303,9 +303,9 @@ export default function ImageClassifier() {
             </div>
             <div>
               <p className="font-display text-lg font-bold leading-tight text-text">
-                Skin Disease Classifier
+                Brain Tumor Classifier
               </p>
-              <p className="text-sm text-slate-600">ResNet50 · HAM10000 · 7 classes</p>
+              <p className="text-sm text-slate-600">ResNet50 · Brain MRI · 4 classes</p>
             </div>
           </div>
           <StatusBadge status={modelStatus} />
@@ -315,12 +315,12 @@ export default function ImageClassifier() {
       <main className="mx-auto max-w-6xl px-4 pb-16 pt-8">
         <section className="mb-10 text-center">
           <h1 className="font-display text-4xl font-bold tracking-tight text-text sm:text-5xl">
-            Skin Disease Classification with{" "}
+            Brain Tumor Classification with{" "}
             <span className="text-primary">ResNet50</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
-            Upload a dermoscopy image and classify it into one of 7 skin
-            conditions — running entirely in your browser via ONNX Runtime.
+            Upload a brain MRI scan and classify it into one of 4 tumor
+            categories — running entirely in your browser via ONNX Runtime.
           </p>
         </section>
 
@@ -369,7 +369,7 @@ export default function ImageClassifier() {
                         if (previewRef.current) {
                           previewRef.current.decode?.();
                           setValidationResult(
-                            validateSkinPhoto(previewRef.current)
+                            validateBrainMRI(previewRef.current)
                           );
                         }
                       }}
@@ -428,7 +428,7 @@ export default function ImageClassifier() {
                 !previewUrl || modelStatus !== "ready" || isInferring
               }
               onClick={runInference}
-              className="mt-6 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-cta px-6 py-4 font-display text-lg font-semibold text-white shadow-md shadow-cta/25 transition-colors duration-200 hover:bg-emerald-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cta disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none motion-reduce:transition-none"
+              className="mt-6 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-cta px-6 py-4 font-display text-lg font-semibold text-white shadow-md shadow-cta/25 transition-colors duration-200 hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cta disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none motion-reduce:transition-none"
             >
               {isInferring ? (
                 <>
@@ -530,20 +530,17 @@ export default function ImageClassifier() {
 
         <section className="mt-10 rounded-2xl border border-primary/10 bg-primary/5 p-6">
           <h2 className="font-display text-lg font-semibold text-text">
-            Skin disease classes
+            Brain tumor classes
           </h2>
           <p className="mt-2 text-sm text-slate-600">
-            This model classifies dermoscopy images into 7 categories from the HAM10000 dataset.
+            This model classifies brain MRI scans into 4 categories from the Brain Tumor MRI dataset.
           </p>
           <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-slate-700 sm:grid-cols-4">
             {[
-              "Actinic Keratosis",
-              "Basal Cell Carcinoma",
-              "Benign Keratosis",
-              "Dermatofibroma",
-              "Melanoma",
-              "Melanocytic Nevi",
-              "Vascular Lesions",
+              "Glioma Tumor",
+              "Meningioma Tumor",
+              "No Tumor",
+              "Pituitary Tumor",
             ].map((cls) => (
               <li key={cls} className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-primary/60 shrink-0" />
