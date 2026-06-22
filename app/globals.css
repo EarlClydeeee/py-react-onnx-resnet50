@@ -1,12 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f0f4ff;
-  --foreground: #1e2a5e;
-  --primary: #1d4ed8;
-  --secondary: #60a5fa;
-  --cta: #0ea5e9;
-  --text: #1e2a5e;
+  --background: #f0fdfa;
+  --foreground: #134e4a;
+  --primary: #0891b2;
+  --secondary: #22d3ee;
+  --cta: #16a34a;
+  --cta-hover: #15803d;
+  --text: #134e4a;
+  --text-muted: #475569;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --border-primary: rgba(8, 145, 178, 0.2);
 }
 
 @theme inline {
@@ -16,9 +21,11 @@
   --color-secondary: var(--secondary);
   --color-cta: var(--cta);
   --color-text: var(--text);
-  --font-sans: var(--font-body);
-  --font-display: var(--font-baloo);
-  --font-mono: var(--font-geist-mono);
+  --color-muted: var(--text-muted);
+  --color-surface: var(--surface);
+  --font-sans: var(--font-figtree), system-ui, sans-serif;
+  --font-display: var(--font-figtree), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -32,15 +39,20 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--text);
-  font-family: var(--font-body), system-ui, sans-serif;
+  background-color: var(--background);
   background-image:
-    radial-gradient(ellipse at 20% 10%, rgba(29, 78, 216, 0.07) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 80%, rgba(96, 165, 250, 0.06) 0%, transparent 60%);
+    radial-gradient(ellipse at 15% 10%, rgba(8, 145, 178, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 85%, rgba(34, 211, 238, 0.06) 0%, transparent 55%);
+  color: var(--text);
+  font-family: var(--font-figtree), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
   min-height: 100vh;
 }
 
-.font-display {
-  font-family: var(--font-baloo), system-ui, sans-serif;
+/* Focus rings — WCAG AAA */
+*:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
