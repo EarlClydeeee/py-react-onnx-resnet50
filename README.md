@@ -10,6 +10,7 @@ Train a **ResNet50** model on the [HAM10000](https://www.kaggle.com/datasets/kma
 | **Dataset** | HAM10000 — 10,015 dermoscopy images, 7 diagnostic categories |
 | **Training** | Google Colab notebook (`skin_classifier.ipynb`) |
 | **Inference** | ONNX Runtime Web in the browser (no server round-trip) |
+| **Validation** | Browser-side image suitability check before classification |
 
 ### Skin disease classes
 
@@ -32,7 +33,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000), upload a skin lesion image, and click **Classify image**.
 
-A sample image is included at `public/sample-skin.webp` (ISIC Archive, CC-0).
+The app expects a trained ONNX model at `public/models/resnet50_skin.onnx`. Generate it from the Colab notebook or with `export_skin_onnx.py --checkpoint best_resnet50_skin.pth`.
 
 ## Project structure
 
@@ -105,13 +106,23 @@ Copy the exported file to `public/models/resnet50_skin.onnx` if needed, then ref
 
 ```mermaid
 flowchart LR
-    A[Upload image] --> B[preprocess.js]
-    B --> C["Resize 256 → CenterCrop 224 → Normalize"]
-    C --> D[ONNX Runtime Web]
-    D --> E[Softmax + top-5 labels]
+    A[Upload image] --> B["Skin photo suitability check"]
+    B --> C{Suitable?}
+    C -- No --> D[Show upload warning]
+    C -- Yes --> E[preprocess.js]
+    E --> F["Resize 256 → CenterCrop 224 → Normalize"]
+    F --> G[ONNX Runtime Web]
+    G --> H[Softmax + top-5 labels]
+    H --> I["Confidence and margin check"]
 ```
 
 Preprocessing in `lib/preprocess.js` matches torchvision eval transforms used during training.
+
+### Photo validation
+
+The browser demo now checks whether the upload looks like a usable close-up skin/lesion photo before inference. It rejects obviously invalid images, such as very dark, overexposed, or non-skin-like photos, and warns when the model confidence or top-class margin is low.
+
+This validation is a safety/quality gate, not a medical diagnosis. A ResNet50 trained only on HAM10000 disease classes cannot prove that a disease is present or detect every out-of-distribution image. For a stronger validator, train a separate binary model with `valid_skin_lesion` vs `invalid_or_non_skin` examples and run it before the disease classifier.
 
 ## Academic deliverables
 

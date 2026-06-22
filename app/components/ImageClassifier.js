@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { preprocessImage, getTopPredictions } from "@/lib/preprocess";
+import {
+  getTopPredictions,
+  preprocessImage,
+  validateSkinPhoto,
+} from "@/lib/preprocess";
 import {
   BoltIcon,
   CpuIcon,
@@ -11,6 +15,8 @@ import {
 
 const MODEL_PATH = "/models/resnet50_skin.onnx";
 const LABELS_PATH = "/data/skin_labels.json";
+const MIN_DISEASE_CONFIDENCE = 0.45;
+const MIN_CONFIDENCE_MARGIN = 0.12;
 
 const FEATURES = [
   {
@@ -98,6 +104,36 @@ function PredictionBar({ label, probability, rank, maxProbability }) {
   );
 }
 
+function ValidationCard({ result }) {
+  if (!result) return null;
+
+  const styles = {
+    valid: "border-cta/40 bg-cta/10 text-emerald-900",
+    warning: "border-amber-300 bg-amber-50 text-amber-900",
+    invalid: "border-red-200 bg-red-50 text-red-800",
+  };
+
+  const titles = {
+    valid: "Skin photo check passed",
+    warning: "Skin photo check needs review",
+    invalid: "Photo is not suitable",
+  };
+
+  return (
+    <div className={`mt-4 rounded-2xl border px-4 py-3 ${styles[result.status]}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="font-medium">{titles[result.status]}</p>
+          <p className="mt-1 text-sm">{result.reason}</p>
+        </div>
+        <span className="shrink-0 font-mono text-sm">
+          {Math.round(result.score * 100)}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function ImageClassifier() {
   const fileInputRef = useRef(null);
   const previewRef = useRef(null);
@@ -111,6 +147,8 @@ export default function ImageClassifier() {
   const [isDragging, setIsDragging] = useState(false);
   const [isInferring, setIsInferring] = useState(false);
   const [predictions, setPredictions] = useState([]);
+  const [validationResult, setValidationResult] = useState(null);
+  const [reliabilityWarning, setReliabilityWarning] = useState("");
   const [inferenceError, setInferenceError] = useState("");
   const [inferenceMs, setInferenceMs] = useState(null);
 
@@ -167,6 +205,8 @@ export default function ImageClassifier() {
     if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setPredictions([]);
+    setValidationResult(null);
+    setReliabilityWarning("");
     setInferenceError("");
     setInferenceMs(null);
   }, [previewUrl]);
@@ -179,6 +219,8 @@ export default function ImageClassifier() {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
       setPredictions([]);
+      setValidationResult(null);
+      setReliabilityWarning("");
       setInferenceError("");
       setInferenceMs(null);
     },
@@ -205,9 +247,17 @@ export default function ImageClassifier() {
     setIsInferring(true);
     setInferenceError("");
     setPredictions([]);
+    setReliabilityWarning("");
     setInferenceMs(null);
 
     try {
+      const skinCheck = validateSkinPhoto(imageEl);
+      setValidationResult(skinCheck);
+      if (skinCheck.status === "invalid") {
+        setInferenceError(skinCheck.reason);
+        return;
+      }
+
       const float32Data = preprocessImage(imageEl);
       const inputTensor = new ort.Tensor("float32", float32Data, [1, 3, 224, 224]);
 
@@ -217,6 +267,18 @@ export default function ImageClassifier() {
 
       const logits = Array.from(outputs.output.data);
       const top5 = getTopPredictions(logits, labels, 5);
+      const confidenceMargin =
+        (top5[0]?.probability ?? 0) - (top5[1]?.probability ?? 0);
+
+      if (
+        (top5[0]?.probability ?? 0) < MIN_DISEASE_CONFIDENCE ||
+        confidenceMargin < MIN_CONFIDENCE_MARGIN ||
+        skinCheck.status === "warning"
+      ) {
+        setReliabilityWarning(
+          "This image may not contain a clear skin disease pattern. Treat the prediction as low-confidence and upload a clearer lesion close-up if available."
+        );
+      }
 
       setPredictions(top5);
       setInferenceMs(elapsed);
@@ -306,10 +368,14 @@ export default function ImageClassifier() {
                       onLoad={() => {
                         if (previewRef.current) {
                           previewRef.current.decode?.();
+                          setValidationResult(
+                            validateSkinPhoto(previewRef.current)
+                          );
                         }
                       }}
                     />
                   </div>
+                  <ValidationCard result={validationResult} />
                   <div className="flex flex-wrap items-center justify-center gap-3">
                     <button
                       type="button"
@@ -407,6 +473,16 @@ export default function ImageClassifier() {
 
               {!isInferring && inferenceError && (
                 <p className="text-red-700" role="alert">{inferenceError}</p>
+              )}
+
+              {!isInferring && reliabilityWarning && (
+                <div
+                  className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+                  role="status"
+                >
+                  <p className="font-medium">Prediction reliability warning</p>
+                  <p className="mt-1">{reliabilityWarning}</p>
+                </div>
               )}
 
               {!isInferring && !inferenceError && predictions.length === 0 && (
