@@ -253,7 +253,7 @@ export default function ImageClassifier() {
     try {
       const mriCheck = validateBrainMRI(imageEl);
       setValidationResult(mriCheck);
-      if (mriCheck.status === "invalid") {
+      if (mriCheck.status !== "valid") {
         setInferenceError(mriCheck.reason);
         return;
       }
